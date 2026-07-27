@@ -1232,10 +1232,10 @@ function AuthScreen({onAuth}){
     setLoading(true);
     setError("");
     try{
-      const {createClient}=await import("https://esm.sh/@supabase/supabase-js@2");
+      const {createClient}=await import("@supabase/supabase-js");
       const sb=createClient(
-        import.meta?.env?.VITE_SUPABASE_URL||window.__SB_URL||"",
-        import.meta?.env?.VITE_SUPABASE_ANON_KEY||window.__SB_KEY||""
+        import.meta.env.VITE_SUPABASE_URL||"",
+        import.meta.env.VITE_SUPABASE_ANON_KEY||""
       );
       const {error:e}=await sb.auth.signInWithOtp({email:email.trim(),
         options:{emailRedirectTo:window.location.origin}});
@@ -1320,11 +1320,11 @@ export default function App(){
 
   // ─── Init Supabase ───────────────────────────────────────────────
   useEffect(()=>{
-    const url=import.meta?.env?.VITE_SUPABASE_URL;
-    const key=import.meta?.env?.VITE_SUPABASE_ANON_KEY;
-    if(!url||!key){ setLoading(false); return; } // offline mode
+    const url=import.meta.env.VITE_SUPABASE_URL;
+    const key=import.meta.env.VITE_SUPABASE_ANON_KEY;
+    if(!url||!key){ setLoading(false); return; }
 
-    import("https://esm.sh/@supabase/supabase-js@2").then(({createClient})=>{
+    import("@supabase/supabase-js").then(({createClient})=>{
       const client=createClient(url,key);
       setSb(client);
       client.auth.getSession().then(({data:{session}})=>{
