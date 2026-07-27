@@ -940,7 +940,7 @@ function StatsScreen({habits,go,consistency,history,grumpyMeter,pendingTreats,ea
   const [breakdownOpen,setBreakdownOpen]=useState(false);
   const today=activeToday(habits);
   const todayDone=today.filter(h=>h.doneDate===todayStr()).length;
-  const score=consistency||72;
+  const score=consistency!=null?consistency:0;
   const mood=score<45?"struggling":score<72?"building":"strong";
   const moodColor=mood==="struggling"?C.warn:mood==="building"?C.accentBr:C.prod;
   const moodLabel=mood==="struggling"?"Struggling":mood==="building"?"Building":"On Fire";
