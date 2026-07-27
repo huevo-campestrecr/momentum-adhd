@@ -1341,7 +1341,11 @@ export default function App(){
       setSb(client);
       client.auth.getSession().then(({data:{session}})=>{
         setUser(session?.user||null);
-        if(session?.user){ loadUserData(client,session.user.id); registerServiceWorker(); }
+        if(session?.user){
+        loadUserData(client,session.user.id);
+        registerServiceWorker();
+        getNotificationStatus().then(setNotifStatus);
+      }
         else setLoading(false);
       });
       client.auth.onAuthStateChange((_,session)=>{
@@ -1463,12 +1467,17 @@ export default function App(){
 
   // ─── Feed Mochi ──────────────────────────────────────────────────
   const toggleNotifications=async()=>{
-    if(!sb||!user) return;
+    if(!user) return;
     if(notifStatus==="granted"){
       await unsubscribeFromPush(sb,user.id);
       setNotifStatus("default");
     } else {
+      // Register SW first, then subscribe
+      await registerServiceWorker();
       const {error}=await subscribeToPush(sb,user.id);
+      if(error){
+        console.error("[Notif] subscribe error:", error);
+      }
       const status=await getNotificationStatus();
       setNotifStatus(status);
     }
