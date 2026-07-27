@@ -1003,7 +1003,7 @@ function StatsScreen({habits,go,consistency,grumpyMeter,pendingTreats,earnedAchi
           </div>
           <div style={{flex:1,background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"12px"}}>
             <div style={{fontSize:10,color:C.txt3,marginBottom:4}}>Treats</div>
-            <div style={{fontSize:22,fontWeight:700,color:C.warn}}>{totalTreats}</div>
+            <div style={{fontSize:22,fontWeight:700,color:C.warn}}>{pendingTreats}</div>
             <div style={{fontSize:9,color:C.txt3,marginTop:2}}>earned total</div>
           </div>
           <div style={{flex:1,background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"12px"}}>
@@ -1060,7 +1060,7 @@ function StatsScreen({habits,go,consistency,grumpyMeter,pendingTreats,earnedAchi
         <div style={{background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"13px",marginBottom:8}}>
           <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
             <div style={{fontSize:10,color:C.txt3,textTransform:"uppercase",letterSpacing:"0.06em"}}>Achievements</div>
-            <div style={{fontSize:10,color:C.warn}}>{totalTreats} treats earned</div>
+            <div style={{fontSize:10,color:C.warn}}>{pendingTreats} treats in jar</div>
           </div>
 
           {/* Tier filter */}
