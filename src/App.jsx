@@ -936,14 +936,14 @@ function TimerScreen({mins,task,onDone,onStop}){
 
 // ═══ PROGRESS SCREEN ════════════════════════════════════════════════
 function StatsScreen({habits,go,consistency,grumpyMeter,pendingTreats,earnedAchievements,onFeedMochi}){
-  const [tierFilter,setTierFilter]=useState("all");
+  const [achieveTab,setAchieveTab]=useState("earned"); // "earned" | "available"
+  const [breakdownOpen,setBreakdownOpen]=useState(false);
   const today=activeToday(habits);
   const todayDone=today.filter(h=>h.doneDate===todayStr()).length;
-  const pts=340+habits.filter(h=>h.doneDate===todayStr()).reduce((a,h)=>a+h.pts,0);
   const score=consistency||72;
   const mood=score<45?"struggling":score<72?"building":"strong";
   const moodColor=mood==="struggling"?C.warn:mood==="building"?C.accentBr:C.prod;
-  const moodLabel=mood==="struggling"?"Struggling — reset time":mood==="building"?"Building Momentum":"On Fire";
+  const moodLabel=mood==="struggling"?"Struggling":mood==="building"?"Building":"On Fire";
   const coaches={
     struggling:["The score doesn't define you. What you do next does.","Rough patch. Every pattern has one. This one ends when you decide."],
     building:["You're building something real. You can't see it yet. Keep building.","Most people quit in the building phase. You haven't. That's significant."],
@@ -954,67 +954,51 @@ function StatsScreen({habits,go,consistency,grumpyMeter,pendingTreats,earnedAchi
     const g=today.filter(h=>h.cat===cat);
     return g.length?Math.round(g.filter(h=>h.doneDate===todayStr()).length/g.length*100):0;
   };
-  const circ=2*Math.PI*28;
-  const dashOff=circ*(1-score/100);
+  const earnedCount=earnedAchievements.length;
+  const totalCount=ALL_ACHIEVEMENTS.length;
+  const earnedList=ALL_ACHIEVEMENTS.filter(a=>earnedAchievements.includes(a.id));
+  const availableList=ALL_ACHIEVEMENTS.filter(a=>!earnedAchievements.includes(a.id));
   const weekDays=["M","T","W","T","F","S","S"];
   const weekStatus=["full","full","partial","full","partial","none","none"];
 
-  const tiers=["all","easy","medium","hard","legend"];
-  const filtered=tierFilter==="all"?ALL_ACHIEVEMENTS:ALL_ACHIEVEMENTS.filter(a=>a.tier===tierFilter);
-  const earnedCount=earnedAchievements.length;
-  const totalCount=ALL_ACHIEVEMENTS.length;
-
   return(
     <div style={{display:"flex",flexDirection:"column",height:"100%"}}>
-      <div style={{flex:1,overflowY:"auto",padding:"16px 16px 8px"}}>
+      <div style={{flex:1,overflowY:"auto",padding:"14px 14px 8px"}}>
 
-        {/* Coach card */}
+        {/* Header stats */}
+        <div style={{display:"flex",gap:8,marginBottom:10}}>
+          <div style={{flex:1,background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"12px"}}>
+            <div style={{fontSize:10,color:C.txt3,marginBottom:3}}>Today</div>
+            <div style={{fontSize:22,fontWeight:700,color:C.txt}}>{todayDone}/{today.length}</div>
+            <div style={{fontSize:9,color:C.txt3}}>habits</div>
+          </div>
+          <div style={{flex:1,background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"12px"}}>
+            <div style={{fontSize:10,color:C.txt3,marginBottom:3}}>Consistency</div>
+            <div style={{fontSize:22,fontWeight:700,color:moodColor}}>{score}%</div>
+            <div style={{fontSize:9,color:moodColor}}>{moodLabel}</div>
+          </div>
+          <div style={{flex:1,background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"12px"}}>
+            <div style={{fontSize:10,color:C.txt3,marginBottom:3}}>Badges</div>
+            <div style={{fontSize:22,fontWeight:700,color:C.accentBr}}>{earnedCount}</div>
+            <div style={{fontSize:9,color:C.txt3}}>of {totalCount}</div>
+          </div>
+        </div>
+
+        {/* Mochi coach */}
         <div style={{background:"linear-gradient(135deg,#1e1438,#150f28)",
-          border:"1px solid "+C.border2,borderRadius:20,padding:"16px",marginBottom:12}}>
-          <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:12}}>
-            <Mochi size={80} animate mood={getMochiMood(grumpyMeter)}/>
+          border:"1px solid "+C.border2,borderRadius:16,padding:"14px",marginBottom:10}}>
+          <div style={{display:"flex",gap:12,alignItems:"center",marginBottom:10}}>
+            <Mochi size={72} animate mood={getMochiMood(grumpyMeter)}/>
             <div style={{flex:1}}>
-              <div style={{fontSize:10,color:"#2db88a",fontWeight:700,letterSpacing:"0.08em",marginBottom:5}}>MOCHI'S WEEKLY READ</div>
-              <div style={{fontSize:13,color:C.txt2,lineHeight:1.6,fontStyle:"italic"}}>"{coachLine}"</div>
+              <div style={{fontSize:10,color:"#2db88a",fontWeight:700,letterSpacing:"0.08em",marginBottom:4}}>MOCHI SAYS</div>
+              <div style={{fontSize:12,color:C.txt2,lineHeight:1.6,fontStyle:"italic"}}>"{coachLine}"</div>
             </div>
           </div>
           <GrumpyMeter value={grumpyMeter}/>
-          <div style={{background:"#0d0a1888",borderRadius:12,padding:"12px 14px",marginTop:10,
-            display:"flex",alignItems:"center",justifyContent:"space-between"}}>
-            <div>
-              <div style={{fontSize:10,color:C.txt3,marginBottom:3,textTransform:"uppercase",letterSpacing:"0.06em"}}>30-day Consistency</div>
-              <div style={{fontSize:36,fontWeight:700,color:moodColor,lineHeight:1}}>{score}%</div>
-              <div style={{fontSize:11,color:moodColor,marginTop:3,opacity:0.85}}>{moodLabel}</div>
-            </div>
-            <svg width="60" height="60" viewBox="0 0 68 68" style={{transform:"rotate(-90deg)"}}>
-              <circle cx="34" cy="34" r="28" fill="none" stroke={C.surf2} strokeWidth="7"/>
-              <circle cx="34" cy="34" r="28" fill="none" stroke={moodColor} strokeWidth="7"
-                strokeDasharray={circ} strokeDashoffset={dashOff} strokeLinecap="round"/>
-            </svg>
-          </div>
         </div>
 
-        {/* Stats row */}
-        <div style={{display:"flex",gap:8,marginBottom:12}}>
-          <div style={{flex:1,background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"12px"}}>
-            <div style={{fontSize:10,color:C.txt3,marginBottom:4}}>Today</div>
-            <div style={{fontSize:22,fontWeight:700,color:C.txt}}>{todayDone}/{today.length}</div>
-            <div style={{fontSize:9,color:C.txt3,marginTop:2}}>habits done</div>
-          </div>
-          <div style={{flex:1,background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"12px"}}>
-            <div style={{fontSize:10,color:C.txt3,marginBottom:4}}>Treats</div>
-            <div style={{fontSize:22,fontWeight:700,color:C.warn}}>{pendingTreats}</div>
-            <div style={{fontSize:9,color:C.txt3,marginTop:2}}>earned total</div>
-          </div>
-          <div style={{flex:1,background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"12px"}}>
-            <div style={{fontSize:10,color:C.txt3,marginBottom:4}}>Badges</div>
-            <div style={{fontSize:22,fontWeight:700,color:C.accentBr}}>{earnedCount}/{totalCount}</div>
-            <div style={{fontSize:9,color:C.txt3,marginTop:2}}>achievements</div>
-          </div>
-        </div>
-
-        {/* Week grid */}
-        <div style={{background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"13px",marginBottom:12}}>
+        {/* This week */}
+        <div style={{background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"13px",marginBottom:10}}>
           <div style={{fontSize:10,color:C.txt3,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:10}}>This week</div>
           <div style={{display:"flex",gap:4}}>
             {weekDays.map((lbl,i)=>{
@@ -1032,80 +1016,106 @@ function StatsScreen({habits,go,consistency,grumpyMeter,pendingTreats,earnedAchi
           </div>
         </div>
 
-        {/* Category breakdown */}
-        <div style={{background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"13px",marginBottom:12}}>
-          <div style={{fontSize:10,color:C.txt3,textTransform:"uppercase",letterSpacing:"0.06em",marginBottom:12}}>Category Breakdown — 30 days</div>
-          {[["Health",C.health,catPct("health"),HISTORY.map(r=>r.health)],
-            ["Home",C.home,catPct("home"),HISTORY.map(r=>r.home)],
-            ["Focus",C.prod,catPct("prod"),HISTORY.map(r=>r.prod)]
-          ].map(([label,color,pct,data])=>(
-            <div key={label} style={{marginBottom:14}}>
-              <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
-                <div style={{fontSize:12,color:C.txt,fontWeight:500}}>{label}</div>
-                <div style={{fontSize:12,color:color,fontWeight:600}}>{pct}% today</div>
-              </div>
-              <div style={{background:"#0d0a18",borderRadius:6,overflow:"hidden",marginBottom:4}}>
-                <div style={{height:4,width:pct+"%",background:color,borderRadius:6,transition:"width 0.6s ease"}}/>
-              </div>
-              <SparkBars data={data} color={color} height={28}/>
-              <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
-                <div style={{fontSize:9,color:C.txt3}}>30 days ago</div>
-                <div style={{fontSize:9,color:C.txt3}}>today</div>
-              </div>
+        {/* Category breakdown — collapsible */}
+        <div style={{background:C.surf,border:"0.5px solid "+(breakdownOpen?C.border2:C.border),
+          borderRadius:14,marginBottom:10,overflow:"hidden"}}>
+          <div onClick={()=>setBreakdownOpen(o=>!o)}
+            style={{display:"flex",alignItems:"center",justifyContent:"space-between",
+              padding:"13px 14px",cursor:"pointer"}}>
+            <div style={{fontSize:12,fontWeight:600,color:C.txt}}>Category Breakdown</div>
+            <div style={{display:"flex",alignItems:"center",gap:8}}>
+              <span style={{fontSize:10,color:C.txt3}}>30 days</span>
+              <span style={{fontSize:10,color:C.txt3,display:"inline-block",
+                transform:breakdownOpen?"rotate(180deg)":"none",transition:"transform 0.2s"}}>▼</span>
             </div>
-          ))}
+          </div>
+          {breakdownOpen&&(
+            <div style={{padding:"0 14px 14px"}}>
+              {[["Health",C.health,catPct("health"),HISTORY.map(r=>r.health)],
+                ["Home",C.home,catPct("home"),HISTORY.map(r=>r.home)],
+                ["Focus",C.prod,catPct("prod"),HISTORY.map(r=>r.prod)]
+              ].map(([label,color,pct,data])=>(
+                <div key={label} style={{marginBottom:14}}>
+                  <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
+                    <div style={{fontSize:12,color:C.txt,fontWeight:500}}>{label}</div>
+                    <div style={{fontSize:12,color:color,fontWeight:600}}>{pct}% today</div>
+                  </div>
+                  <div style={{background:"#0d0a18",borderRadius:6,overflow:"hidden",marginBottom:4}}>
+                    <div style={{height:4,width:pct+"%",background:color,borderRadius:6,transition:"width 0.6s ease"}}/>
+                  </div>
+                  <SparkBars data={data} color={color} height={26}/>
+                  <div style={{display:"flex",justifyContent:"space-between",marginTop:2}}>
+                    <div style={{fontSize:9,color:C.txt3}}>30 days ago</div>
+                    <div style={{fontSize:9,color:C.txt3}}>today</div>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
 
-        {/* Achievements */}
-        <div style={{background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,padding:"13px",marginBottom:8}}>
-          <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:12}}>
-            <div style={{fontSize:10,color:C.txt3,textTransform:"uppercase",letterSpacing:"0.06em"}}>Achievements</div>
-            <div style={{fontSize:10,color:C.warn}}>{pendingTreats} treats in jar</div>
-          </div>
+        {/* Achievements — earned / available tabs */}
+        <div style={{background:C.surf,border:"0.5px solid "+C.border,borderRadius:14,
+          padding:"13px",marginBottom:8}}>
+          <div style={{fontSize:12,fontWeight:600,color:C.txt,marginBottom:12}}>Achievements</div>
 
-          {/* Tier filter */}
-          <div style={{display:"flex",gap:4,marginBottom:14,overflowX:"auto"}}>
-            {tiers.map(t=>(
-              <div key={t} onClick={()=>setTierFilter(t)}
-                style={{flexShrink:0,padding:"5px 10px",borderRadius:20,fontSize:10,cursor:"pointer",
-                  fontWeight:tierFilter===t?700:400,
-                  background:tierFilter===t?(t==="all"?C.accent:TIER_COLORS[t])+"22":"transparent",
-                  border:"0.5px solid "+(tierFilter===t?(t==="all"?C.accent:TIER_COLORS[t]):C.border),
-                  color:tierFilter===t?(t==="all"?C.accentBr:TIER_COLORS[t]):C.txt3}}>
-                {t==="all"?"All":TIER_LABELS[t]}
+          {/* Tabs */}
+          <div style={{display:"flex",gap:4,marginBottom:14,
+            background:"#0d0a18",borderRadius:10,padding:3}}>
+            {[["earned","Earned "+earnedCount],["available","Available "+(totalCount-earnedCount)]].map(([tab,label])=>(
+              <div key={tab} onClick={()=>setAchieveTab(tab)}
+                style={{flex:1,padding:"8px 0",borderRadius:8,textAlign:"center",
+                  fontSize:11,fontWeight:achieveTab===tab?700:400,cursor:"pointer",
+                  background:achieveTab===tab?C.surf:"transparent",
+                  color:achieveTab===tab?C.txt:C.txt3,
+                  transition:"all 0.15s"}}>
+                {label}
               </div>
             ))}
           </div>
 
           {/* Achievement list */}
           <div style={{display:"flex",flexDirection:"column",gap:8}}>
-            {filtered.map(a=>{
-              const isEarned=earnedAchievements.includes(a.id);
+            {(achieveTab==="earned"?earnedList:availableList).map(a=>{
+              const isEarned=achieveTab==="earned";
               const tierColor=TIER_COLORS[a.tier];
               return(
-                <div key={a.id} style={{display:"flex",alignItems:"center",gap:12,
+                <div key={a.id} style={{display:"flex",alignItems:"center",gap:10,
                   background:isEarned?tierColor+"18":"transparent",
                   border:"0.5px solid "+(isEarned?tierColor:C.border),
-                  borderRadius:12,padding:"11px 13px",opacity:isEarned?1:0.45}}>
-                  <div style={{width:40,height:40,borderRadius:10,flexShrink:0,
+                  borderRadius:12,padding:"10px 12px",
+                  opacity:isEarned?1:0.5}}>
+                  <div style={{width:38,height:38,borderRadius:10,flexShrink:0,
                     background:isEarned?tierColor+"33":"#1a1230",
                     border:"1.5px solid "+(isEarned?tierColor:C.border),
-                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:20}}>
+                    display:"flex",alignItems:"center",justifyContent:"center",fontSize:18}}>
                     {a.emoji}
                   </div>
                   <div style={{flex:1,minWidth:0}}>
-                    <div style={{fontSize:13,color:isEarned?C.txt:C.txt3,fontWeight:isEarned?600:400}}>{a.name}</div>
-                    <div style={{fontSize:11,color:C.txt3,marginTop:2}}>{a.desc}</div>
+                    <div style={{display:"flex",alignItems:"center",gap:6}}>
+                      <div style={{fontSize:12,color:isEarned?C.txt:C.txt3,fontWeight:isEarned?600:400}}>{a.name}</div>
+                      <div style={{fontSize:9,color:tierColor,background:tierColor+"22",
+                        borderRadius:6,padding:"1px 5px",flexShrink:0}}>{TIER_LABELS[a.tier]}</div>
+                    </div>
+                    <div style={{fontSize:10,color:C.txt3,marginTop:2}}>{a.desc}</div>
                   </div>
-                  <div style={{flexShrink:0,textAlign:"center"}}>
-                    <div style={{fontSize:13,color:C.warn,fontWeight:700}}>+{a.treats}</div>
+                  <div style={{flexShrink:0,textAlign:"right"}}>
+                    <div style={{fontSize:12,color:C.warn,fontWeight:700}}>+{a.treats}</div>
                     <div style={{fontSize:9,color:C.txt3}}>treats</div>
                   </div>
                 </div>
               );
             })}
+            {(achieveTab==="earned"?earnedList:availableList).length===0&&(
+              <div style={{textAlign:"center",padding:"20px 0",color:C.txt3,fontSize:13}}>
+                {achieveTab==="earned"
+                  ? "No achievements yet. Complete habits to earn your first one."
+                  : "You earned them all. Mochi is speechless."}
+              </div>
+            )}
           </div>
         </div>
+
       </div>
       <Nav active="stats" go={go}/>
     </div>
