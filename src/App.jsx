@@ -399,13 +399,21 @@ function HomeScreen({habits,toggle,onCantStart,go,consistency,grumpyMeter,pendin
       <div style={{background:"linear-gradient(180deg,#1a0f38 0%,#0d0a18 100%)",
         padding:"12px 18px 14px",flexShrink:0,borderBottom:"0.5px solid "+C.border}}>
 
-        {/* Top row: greeting + momentum ring */}
+        {/* Top row: greeting + bell + momentum ring */}
         <div style={{display:"flex",justifyContent:"space-between",alignItems:"center",marginBottom:10}}>
           <div>
             <div style={{fontSize:11,color:C.txt3}}>{greeting}</div>
             <div style={{fontSize:17,fontWeight:700,color:C.txt}}>Today's Momentum</div>
           </div>
-          <MomentumRing h={hp} ho={ho} p={pp} size={68}/>
+          <div style={{display:"flex",alignItems:"center",gap:10}}>
+            <button onClick={onToggleNotif}
+              style={{background:"transparent",border:"none",
+                fontSize:20,cursor:"pointer",opacity:notifStatus==="granted"?1:0.4,
+                padding:4}}>
+              {notifStatus==="granted"?"🔔":"🔕"}
+            </button>
+            <MomentumRing h={hp} ho={ho} p={pp} size={68}/>
+          </div>
         </div>
 
         {/* Mochi + speech bubble */}
@@ -533,16 +541,6 @@ function HomeScreen({habits,toggle,onCantStart,go,consistency,grumpyMeter,pendin
       </div>
 
       {/* Can't Start */}
-      <div style={{padding:"6px 16px 0",flexShrink:0,display:"flex",justifyContent:"flex-end"}}>
-        <button onClick={onToggleNotif}
-          style={{background:"transparent",border:"0.5px solid "+(notifStatus==="granted"?C.prod:C.border),
-            borderRadius:20,padding:"4px 12px",fontSize:11,cursor:"pointer",
-            color:notifStatus==="granted"?C.prod:C.txt3,display:"flex",alignItems:"center",gap:5}}>
-          <span>{notifStatus==="granted"?"🔔":"🔕"}</span>
-          <span>{notifStatus==="granted"?"Notifications on":"Enable notifications"}</span>
-        </button>
-      </div>
-
       <div style={{padding:"8px 16px 10px",flexShrink:0}}>
         <button onClick={onCantStart}
           style={{width:"100%",background:"linear-gradient(135deg,#2d1a4a,#1f1238)",
