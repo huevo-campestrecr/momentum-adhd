@@ -1338,9 +1338,11 @@ export default function App(){
     const {data:completions}=await client.from("completions")
       .select("*").eq("user_id",userId).eq("completed_on",today);
 
+    const completedIds=new Set((completions||[]).map(c=>c.habit_id));
     if(habitsData&&habitsData.length>0){
-      const completedIds=new Set((completions||[]).map(c=>c.habit_id));
       setHabits(habitsData.map(h=>({...h,doneDate:completedIds.has(h.id)?today:null})));
+    } else if(habitsData){
+      setHabits([]); // logged in but no habits yet
     }
 
     // Load user state
