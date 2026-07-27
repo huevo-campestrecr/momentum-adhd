@@ -935,7 +935,7 @@ function TimerScreen({mins,task,onDone,onStop}){
 }
 
 // ═══ PROGRESS SCREEN ════════════════════════════════════════════════
-function StatsScreen({habits,go,consistency,grumpyMeter,pendingTreats,earnedAchievements,onFeedMochi}){
+function StatsScreen({habits,go,consistency,history,grumpyMeter,pendingTreats,earnedAchievements,onFeedMochi}){
   const [achieveTab,setAchieveTab]=useState("earned"); // "earned" | "available"
   const [breakdownOpen,setBreakdownOpen]=useState(false);
   const today=activeToday(habits);
@@ -954,6 +954,7 @@ function StatsScreen({habits,go,consistency,grumpyMeter,pendingTreats,earnedAchi
     const g=today.filter(h=>h.cat===cat);
     return g.length?Math.round(g.filter(h=>h.doneDate===todayStr()).length/g.length*100):0;
   };
+  const safeHistory=history&&history.length===30?history:Array.from({length:30},()=>({health:0,home:0,prod:0}));
   const earnedCount=earnedAchievements.length;
   const totalCount=ALL_ACHIEVEMENTS.length;
   const earnedList=ALL_ACHIEVEMENTS.filter(a=>earnedAchievements.includes(a.id));
@@ -1031,9 +1032,9 @@ function StatsScreen({habits,go,consistency,grumpyMeter,pendingTreats,earnedAchi
           </div>
           {breakdownOpen&&(
             <div style={{padding:"0 14px 14px"}}>
-              {[["Health",C.health,catPct("health"),HISTORY.map(r=>r.health)],
-                ["Home",C.home,catPct("home"),HISTORY.map(r=>r.home)],
-                ["Focus",C.prod,catPct("prod"),HISTORY.map(r=>r.prod)]
+              {[["Health",C.health,catPct("health"),safeHistory.map(r=>Math.min(100,r.health*33))],
+                ["Home",C.home,catPct("home"),safeHistory.map(r=>Math.min(100,r.home*33))],
+                ["Focus",C.prod,catPct("prod"),safeHistory.map(r=>Math.min(100,r.prod*33))]
               ].map(([label,color,pct,data])=>(
                 <div key={label} style={{marginBottom:14}}>
                   <div style={{display:"flex",justifyContent:"space-between",marginBottom:4}}>
@@ -1313,7 +1314,11 @@ export default function App(){
   const [user,setUser]=useState(null);
   const [sb,setSb]=useState(null);
   const [loading,setLoading]=useState(true);
-  const consistency=72;
+  const [history,setHistory]=useState([]); // 30 days of completions
+  // consistency = % of days in last 30 where at least 1 habit was completed
+  const consistency=history.length===0?0:Math.round(
+    history.filter(d=>d.health+d.home+d.prod>0).length/30*100
+  );
 
   // ─── Init Supabase ───────────────────────────────────────────────
   useEffect(()=>{
@@ -1353,6 +1358,34 @@ export default function App(){
       setHabits(habitsData.map(h=>({...h,doneDate:completedIds.has(h.id)?today:null})));
     } else if(habitsData){
       setHabits([]); // logged in but no habits yet
+    }
+
+    // Load 30-day completion history for sparklines + consistency
+    const since=new Date();
+    since.setDate(since.getDate()-30);
+    const sinceStr=since.toISOString().split("T")[0];
+    const {data:histData}=await client.from("completions")
+      .select("completed_on,habit_id,habits(cat)")
+      .eq("user_id",userId)
+      .gte("completed_on",sinceStr);
+
+    if(histData){
+      // Build 30-day array — one entry per day
+      const dayMap={};
+      histData.forEach(c=>{
+        const d=c.completed_on;
+        if(!dayMap[d]) dayMap[d]={health:0,home:0,prod:0};
+        const cat=c.habits?.cat;
+        if(cat&&dayMap[d][cat]!==undefined) dayMap[d][cat]++;
+      });
+      // Fill in all 30 days (zeros for days with no completions)
+      const days=Array.from({length:30},(_,i)=>{
+        const d=new Date();
+        d.setDate(d.getDate()-(29-i));
+        const key=d.getFullYear()+"-"+(d.getMonth()+1)+"-"+d.getDate();
+        return dayMap[key]||{health:0,home:0,prod:0};
+      });
+      setHistory(days);
     }
 
     // Load user state
@@ -1576,7 +1609,7 @@ export default function App(){
         {screen==="home"    &&<HomeScreen     habits={habits} toggle={toggle} onCantStart={()=>setCantStart(true)} go={setScreen} consistency={consistency} grumpyMeter={grumpyMeter} pendingTreats={pendingTreats} onFeedMochi={feedMochi}/>}
         {screen==="sprint"  &&<SprintScreen   go={setScreen} onStart={(m,t)=>{setSprintMins(m);setSprintTask(t);setScreen("timer");}}/>}
         {screen==="timer"   &&<TimerScreen    mins={sprintMins} task={sprintTask} onDone={handleSprintDone} onStop={()=>setScreen("sprint")}/>}
-        {screen==="stats"   &&<StatsScreen    habits={habits} go={setScreen} consistency={consistency} grumpyMeter={grumpyMeter} pendingTreats={pendingTreats} earnedAchievements={earnedAchievements} onFeedMochi={feedMochi}/>}
+        {screen==="stats"   &&<StatsScreen    habits={habits} go={setScreen} consistency={consistency} history={history} grumpyMeter={grumpyMeter} pendingTreats={pendingTreats} earnedAchievements={earnedAchievements} onFeedMochi={feedMochi}/>}
         {screen==="schedule"&&<ScheduleScreen habits={habits} go={setScreen} onAdd={addHabit} onDelete={deleteHabit}/>}
 
         {cantStart&&<CantStartModal habits={habits} onClose={()=>setCantStart(false)} onTimer={()=>{setCantStart(false);setSprintMins(2);setScreen("timer");}}/>}
