@@ -1223,12 +1223,12 @@ function Celebration({title,sub,treats,onClose}){
 // ═══ AUTH SCREEN ════════════════════════════════════════════════
 function AuthScreen({onAuth}){
   const [email,setEmail]=useState("");
-  const [sent,setSent]=useState(false);
+  const [password,setPassword]=useState("");
   const [loading,setLoading]=useState(false);
   const [error,setError]=useState("");
 
-  const handleSend=async()=>{
-    if(!email.trim()) return;
+  const handleLogin=async()=>{
+    if(!email.trim()||!password.trim()) return;
     setLoading(true);
     setError("");
     try{
@@ -1237,10 +1237,12 @@ function AuthScreen({onAuth}){
         import.meta.env.VITE_SUPABASE_URL||"",
         import.meta.env.VITE_SUPABASE_ANON_KEY||""
       );
-      const {error:e}=await sb.auth.signInWithOtp({email:email.trim(),
-        options:{emailRedirectTo:window.location.origin}});
+      const {data,error:e}=await sb.auth.signInWithPassword({
+        email:email.trim(),
+        password:password.trim(),
+      });
       if(e) setError(e.message);
-      else setSent(true);
+      else if(data?.user) onAuth(data.user);
     }catch(e){ setError("Something went wrong. Try again."); }
     setLoading(false);
   };
@@ -1255,43 +1257,28 @@ function AuthScreen({onAuth}){
       <div style={{fontSize:13,color:C.txt3,marginBottom:32,textAlign:"center",lineHeight:1.6}}>
         Keep Mochi happy. Build real habits.
       </div>
-      {!sent?(
-        <div style={{width:"100%"}}>
-          <div style={{fontSize:11,color:C.txt3,marginBottom:8,textTransform:"uppercase",letterSpacing:"0.06em"}}>
-            Your email
-          </div>
-          <input value={email} onChange={e=>setEmail(e.target.value)}
-            placeholder="you@example.com" type="email"
-            style={{width:"100%",background:C.surf2,border:"0.5px solid "+C.border2,
-              borderRadius:12,padding:"13px 16px",color:C.txt,fontSize:14,
-              outline:"none",marginBottom:12,boxSizing:"border-box"}}/>
-          {error&&<div style={{fontSize:12,color:"#e85a4a",marginBottom:10}}>{error}</div>}
-          <button onClick={handleSend} disabled={loading||!email.trim()}
-            style={{width:"100%",background:email.trim()?C.accent:"#2a1f4a",
-              border:"none",borderRadius:12,padding:14,color:"white",
-              fontSize:14,fontWeight:700,cursor:email.trim()?"pointer":"default"}}>
-            {loading?"Sending...":"Send magic link"}
-          </button>
-          <div style={{fontSize:11,color:C.txt3,textAlign:"center",marginTop:12,lineHeight:1.6}}>
-            No password needed. We send a link to your email.
-          </div>
-        </div>
-      ):(
-        <div style={{textAlign:"center"}}>
-          <div style={{fontSize:40,marginBottom:16}}>📬</div>
-          <div style={{fontSize:16,fontWeight:700,color:C.txt,marginBottom:8}}>Check your email</div>
-          <div style={{fontSize:13,color:C.txt3,lineHeight:1.6,marginBottom:24}}>
-            We sent a magic link to<br/>
-            <span style={{color:C.accentBr,fontWeight:600}}>{email}</span><br/>
-            Click it to sign in.
-          </div>
-          <button onClick={()=>setSent(false)}
-            style={{background:"transparent",border:"0.5px solid "+C.border,
-              borderRadius:12,padding:"10px 20px",color:C.txt3,fontSize:13,cursor:"pointer"}}>
-            Use a different email
-          </button>
-        </div>
-      )}
+      <div style={{width:"100%"}}>
+        <div style={{fontSize:11,color:C.txt3,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>Email</div>
+        <input value={email} onChange={e=>setEmail(e.target.value)}
+          placeholder="you@example.com" type="email"
+          style={{width:"100%",background:C.surf2,border:"0.5px solid "+C.border2,
+            borderRadius:12,padding:"13px 16px",color:C.txt,fontSize:14,
+            outline:"none",marginBottom:12,boxSizing:"border-box"}}/>
+        <div style={{fontSize:11,color:C.txt3,marginBottom:6,textTransform:"uppercase",letterSpacing:"0.06em"}}>Password</div>
+        <input value={password} onChange={e=>setPassword(e.target.value)}
+          placeholder="your password" type="password"
+          onKeyDown={e=>e.key==="Enter"&&handleLogin()}
+          style={{width:"100%",background:C.surf2,border:"0.5px solid "+C.border2,
+            borderRadius:12,padding:"13px 16px",color:C.txt,fontSize:14,
+            outline:"none",marginBottom:12,boxSizing:"border-box"}}/>
+        {error&&<div style={{fontSize:12,color:"#e85a4a",marginBottom:10}}>{error}</div>}
+        <button onClick={handleLogin} disabled={loading||!email.trim()||!password.trim()}
+          style={{width:"100%",background:email.trim()&&password.trim()?C.accent:"#2a1f4a",
+            border:"none",borderRadius:12,padding:14,color:"white",
+            fontSize:14,fontWeight:700,cursor:"pointer"}}>
+          {loading?"Signing in...":"Sign in"}
+        </button>
+      </div>
     </div>
   );
 }
